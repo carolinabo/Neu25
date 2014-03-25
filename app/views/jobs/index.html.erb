@@ -1,0 +1,61 @@
+<% provide(:title, 'All jobs') %>
+
+<% if @objective_function_value!=nil %>
+<h1>Solution</h1>
+Objective function value: <b><%=   @objective_function_value %></b><br>   <br>   <br>
+    <table class="table" id="jobs">
+      <tr>
+        <th>Name</th>
+        <th>Duration</th>
+        <th>FEZ</th>
+        <th>SEZ</th>
+        <th>Begin</th>
+        <th>End</th>
+        <th></th>
+      </tr>
+
+      <% @jobs.each do |job| %>
+          <tr>
+            <td><%= job.name %></td>
+            <td><%= job.duration %></td>
+            <td><%= job.fez %></td>
+            <td><%= job.sez %></td>
+            <td><%= job.begin %></td>
+            <td><%= job.end %></td>
+          </tr>
+      <% end %>
+    </table>
+
+   <br>
+    <div class="navigation-left" style="float:left">
+      &lArr; <%= link_to  'Go to Main Menu', current_user %>    </div><br>
+
+<%else%>
+<h1>Jobs</h1>
+    <table class="table" id="jobs">
+      <tr>
+        <th>Name</th>
+        <th>Duration</th>
+       <th></th>
+      </tr>
+
+      <% @jobs.each do |job| %>
+          <tr>
+            <td><%= best_in_place job, :name, :type => :input %></td>
+            <td><%= best_in_place job, :duration, :type => :input %></td>
+            <td><%= link_to 'Destroy', job, method: :delete, data: {confirm: 'Are you sure?'} %></td>
+          </tr>
+      <% end %>
+    </table>
+
+<br/>
+
+<%= link_to 'Create a new Job', new_job_path %><br> <br>
+
+<div class="navigation-left" style="float:left">
+  &lArr;  <%= link_to 'Go Back to Resources', resources_path %>  </div>
+<div class="navigation-left" style="float:right">
+<%= link_to 'Continue with Relations', relations_path %>     &#8658;    </div> <br>
+<div class="navigation-left" style="float:left">
+  &lArr; <%= link_to  'Go to Main Menu', current_user %>    </div><br>
+<% end %>

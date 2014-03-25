@@ -1,0 +1,27 @@
+<h1>Consumptions</h1>
+<table class="table" id="consumptions">
+  <tr>
+    <th>Job</th>
+    <th>Ressource</th>
+    <th>Consumption</th>
+    <th></th>
+  </tr>
+
+  <% @consumptions.each do |consumption| %>
+      <tr>
+        <td><%= consumption.job.name %></td>
+        <td><%= consumption.resource.name %></td>
+        <td><%= best_in_place consumption, :consumption, :type => :input %></td>
+        <td><%= link_to 'Destroy', consumption, method: :delete, data: {confirm: 'Are you sure?'} %></td>
+      </tr>
+  <% end %>
+</table>
+
+<br/>
+
+<%= link_to 'Create a new Consumption', new_consumption_path %><br> <br>
+
+<div class="navigation-left" style="float:left">
+  &lArr;  <%= link_to 'Go Back to Relations', relations_path %>  </div><br>
+<div class="navigation-left" style="float:left">
+  &lArr; <%= link_to  'Go to Main Menu', current_user %>    </div><br>

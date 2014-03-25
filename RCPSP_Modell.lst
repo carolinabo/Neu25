@@ -1,0 +1,921 @@
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  set
+   2    j Arbeitsgang
+   3    t Periode
+   4    r Ressource;
+   5   
+   6  alias(t,q);
+   7  alias(h,j);
+   8   
+   9  set
+  10    VN(h,j) Vorgänger-Nachfolger-Relation zwischen h und j;
+  11   
+  12  parameter
+  13    d(j)    Dauer des Arbeitsgangs j
+  14    FEZ(j)  fruehestmoeglicher Endtermin des Arbeitsgangs j
+  15    k(j,r)  Kapazitaetsbedarf des Arbeitsgangs j bezueglich der Ressource r je Periode
+  16    Kap(r)  Periodenkapazitaet der Ressource r
+  17    SEZ(j)  spaetestzulaessiger Endtermin des Arbeitsgangs j   ;
+  18   
+  19  binary variables
+  20   
+  21    x(j,t)  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst;
+  22   
+  23  free variables
+  24    z       Zielfunktionswert;
+  25   
+INCLUDE    C:\Sites\RCPSP23\inputfile.inc
+  27  set r /
+  28  r12
+  29  /;
+  30   
+  31  set j /
+  32  Q
+  33  j91
+  34  j92
+  35  j93
+  36  j94
+  37  j95
+  38  j96
+  39  j97
+  40  j98
+  41  j99
+  42  S
+  43  /;
+  44   
+  45  set t /t0*t33/;
+  46   
+  47  VN(h,j)=no;
+  48  VN('Q','j91')=yes;
+  49  VN('j91','S')=yes;
+  50  VN('Q','j92')=yes;
+  51  VN('j92','S')=yes;
+  52  VN('Q','j93')=yes;
+  53  VN('j93','S')=yes;
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+  54  VN('Q','j94')=yes;
+  55  VN('j94','S')=yes;
+  56  VN('Q','j95')=yes;
+  57  VN('j95','S')=yes;
+  58  VN('Q','j96')=yes;
+  59  VN('j96','S')=yes;
+  60  VN('Q','j97')=yes;
+  61  VN('j97','S')=yes;
+  62  VN('Q','j98')=yes;
+  63  VN('j98','S')=yes;
+  64  VN('Q','j99')=yes;
+  65  VN('j99','S')=yes;
+  66   
+  67  VN('j91','j92')=yes;
+  68  VN('j91','j93')=yes;
+  69  VN('j92','j94')=yes;
+  70  VN('j93','j97')=yes;
+  71  VN('j94','j95')=yes;
+  72  VN('j94','j96')=yes;
+  73  VN('j95','j98')=yes;
+  74  VN('j95','j99')=yes;
+  75  VN('j96','j97')=yes;
+  76  VN('j97','j99')=yes;
+  77   
+  78  parameter
+  79  d(j) /
+  80  Q   0
+  81  S   0
+  82  j91   2
+  83  j92   4
+  84  j93   3
+  85  j94   7
+  86  j95   2
+  87  j96   1
+  88  j97   5
+  89  j98   2
+  90  j99   7
+  91  /
+  92  FEZ(j) /
+  93  Q   0
+  94  S   0
+  95  j91   2
+  96  j92   6
+  97  j93   5
+  98  j94   13
+  99  j95   15
+ 100  j96   14
+ 101  j97   19
+ 102  j98   17
+ 103  j99   26
+ 104  /
+ 105  SEZ(j) /
+ 106  Q   0
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 107  S 33
+ 108  j91   2
+ 109  j92   6
+ 110  j93   14
+ 111  j94   13
+ 112  j95   19
+ 113  j96   14
+ 114  j97   19
+ 115  j98   26
+ 116  j99   26
+ 117  /
+ 118  Kap(r) /
+ 119  r12   9
+ 120  /;
+ 121   
+ 122  k(j,r)=0;
+ 123  k('j91','r12')=1;
+ 124  k('j92','r12')=2;
+ 125  k('j93','r12')=6;
+ 126  k('j94','r12')=1;
+ 127  k('j95','r12')=1;
+ 128  k('j96','r12')=2;
+ 129  k('j97','r12')=2;
+ 130  k('j98','r12')=1;
+ 131  k('j99','r12')=8;
+ 132   
+ 133   
+ 134  Equations
+ 135      Zielfunktion
+ 136      JederVorgangEinmal(j)
+ 137      Projektstruktur(h,j)
+ 138      Kapazitaetsrestriktion(r,t);
+ 139   
+ 140  Zielfunktion..
+ 141      z=e=sum(j$(ord(j)=card(J)),sum(t$(FEZ(j)<=ord(t)-1 and ord(t)-1 <= SEZ(j)), (ord(t)-1)*x(j,t)));
+ 142   
+ 143  JederVorgangEinmal(j)..
+ 144      sum(t$(FEZ(j)<=ord(t)-1 and ord(t)-1 <= SEZ(j)), x(j,t)) =e= 1;
+ 145   
+ 146  Projektstruktur(h,j)$VN(h,j)..
+ 147      sum(t$(FEZ(h)<=ord(t)-1 and ord(t)-1 <= SEZ(h)), (ord(t)-1)*x(h,t))  =l=
+ 148      sum(t$(FEZ(j)<=ord(t)-1 and ord(t)-1 <= SEZ(j)), (ord(t)-1-d(j))*x(j,t));
+ 149   
+ 150  Kapazitaetsrestriktion(r,t)..
+ 151      sum(j,k(j,r)*sum(q$(ord(q)-1>=ord(t)-1 and ord(q)-1<=ord(t)-1+d(j)-1),x(j,q)))=l=Kap(r);
+ 152   
+ 153  model RCPSP /
+ 154      Zielfunktion
+ 155      JederVorgangEinmal
+ 156      Projektstruktur
+ 157      Kapazitaetsrestriktion
+ 158      /;
+ 159   
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 160  *Liefertermin muss verschoben werden, sonst keine zulaessige Loesung
+ 161  SEZ(j)=SEZ(j)+1;
+ 162   
+ 163  solve RCPSP minimizing z using mip;
+ 164   
+ 165  display x.l
+ 166   
+ 167  loop(t,
+ 168   x.l('Q',t)=0;
+ 169   x.l('S',t)=0;
+ 170  );
+ 171   
+ 172  file Outputfile / 'Outputfile.txt'/;
+ 173  put Outputfile;
+ 174   
+ 175  put 'Zielfunktionswert:  ',z.l /
+ 176   
+ 177  loop(j,
+ 178       loop(t,
+ 179           if(x.l(j,t)=1,
+ 180               put j.tl:0, ' ; ' ord(t):0 /
+ 181           );
+ 182       );
+ 183  );
+ 184   
+ 185  putclose outputfile;
+ 186   
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  C:\Sites\RCPSP23\RCPSP_Modell.gms
+     2       26 INCLUDE        1      26  .C:\Sites\RCPSP23\inputfile.inc
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  24.1.3 r41464 WEX-WEI
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE RCPSP Using MIP From line 163
+
+
+---- Zielfunktion  =E=  
+
+Zielfunktion..  - x(S,t1) - 2*x(S,t2) - 3*x(S,t3) - 4*x(S,t4) - 5*x(S,t5) - 6*x(S,t6) - 7*x(S,t7) - 8*x(S,t8) - 9*x(S,t9) - 10*x(S,t10) - 11*x(S,t11) - 12*x(S,t12) - 13*x(S,t13) - 14*x(S,t14) - 15*x(S,t15) - 16*x(S,t16) - 17*x(S,t17) - 18*x(S,t18)
+     
+      - 19*x(S,t19) - 20*x(S,t20) - 21*x(S,t21) - 22*x(S,t22) - 23*x(S,t23) - 24*x(S,t24) - 25*x(S,t25) - 26*x(S,t26) - 27*x(S,t27) - 28*x(S,t28) - 29*x(S,t29) - 30*x(S,t30) - 31*x(S,t31) - 32*x(S,t32) - 33*x(S,t33) + z =E= 0 ; (LHS = 0)
+     
+
+---- JederVorgangEinmal  =E=  
+
+JederVorgangEinmal(Q)..  x(Q,t0) + x(Q,t1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+JederVorgangEinmal(j91)..  x(j91,t2) + x(j91,t3) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+JederVorgangEinmal(j92)..  x(j92,t6) + x(j92,t7) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+REMAINING 8 ENTRIES SKIPPED
+
+
+---- Projektstruktur  =L=  
+
+Projektstruktur(Q,j91)..  x(Q,t1) - x(j91,t3) =L= 0 ; (LHS = 0)
+     
+Projektstruktur(Q,j92)..  x(Q,t1) - 2*x(j92,t6) - 3*x(j92,t7) =L= 0 ; (LHS = 0)
+     
+Projektstruktur(Q,j93)..  x(Q,t1) - 2*x(j93,t5) - 3*x(j93,t6) - 4*x(j93,t7) - 5*x(j93,t8) - 6*x(j93,t9) - 7*x(j93,t10) - 8*x(j93,t11) - 9*x(j93,t12) - 10*x(j93,t13) - 11*x(j93,t14) - 12*x(j93,t15) =L= 0 ; (LHS = 0)
+     
+REMAINING 25 ENTRIES SKIPPED
+
+
+---- Kapazitaetsrestriktion  =L=  
+
+Kapazitaetsrestriktion(r12,t0)..  x(j91,t0) + x(j91,t1) + 2*x(j92,t0) + 2*x(j92,t1) + 2*x(j92,t2) + 2*x(j92,t3) + 6*x(j93,t0) + 6*x(j93,t1) + 6*x(j93,t2) + x(j94,t0) + x(j94,t1) + x(j94,t2) + x(j94,t3) + x(j94,t4) + x(j94,t5) + x(j94,t6) + x(j95,t0)
+     
+      + x(j95,t1) + 2*x(j96,t0) + 2*x(j97,t0) + 2*x(j97,t1) + 2*x(j97,t2) + 2*x(j97,t3) + 2*x(j97,t4) + x(j98,t0) + x(j98,t1) + 8*x(j99,t0) + 8*x(j99,t1) + 8*x(j99,t2) + 8*x(j99,t3) + 8*x(j99,t4) + 8*x(j99,t5) + 8*x(j99,t6) =L= 9 ; (LHS = 0)
+     
+Kapazitaetsrestriktion(r12,t1)..  x(j91,t1) + x(j91,t2) + 2*x(j92,t1) + 2*x(j92,t2) + 2*x(j92,t3) + 2*x(j92,t4) + 6*x(j93,t1) + 6*x(j93,t2) + 6*x(j93,t3) + x(j94,t1) + x(j94,t2) + x(j94,t3) + x(j94,t4) + x(j94,t5) + x(j94,t6) + x(j94,t7) + x(j95,t1)
+     
+      + x(j95,t2) + 2*x(j96,t1) + 2*x(j97,t1) + 2*x(j97,t2) + 2*x(j97,t3) + 2*x(j97,t4) + 2*x(j97,t5) + x(j98,t1) + x(j98,t2) + 8*x(j99,t1) + 8*x(j99,t2) + 8*x(j99,t3) + 8*x(j99,t4) + 8*x(j99,t5) + 8*x(j99,t6) + 8*x(j99,t7) =L= 9 ; (LHS = 0)
+     
+Kapazitaetsrestriktion(r12,t2)..  x(j91,t2) + x(j91,t3) + 2*x(j92,t2) + 2*x(j92,t3) + 2*x(j92,t4) + 2*x(j92,t5) + 6*x(j93,t2) + 6*x(j93,t3) + 6*x(j93,t4) + x(j94,t2) + x(j94,t3) + x(j94,t4) + x(j94,t5) + x(j94,t6) + x(j94,t7) + x(j94,t8) + x(j95,t2)
+     
+      + x(j95,t3) + 2*x(j96,t2) + 2*x(j97,t2) + 2*x(j97,t3) + 2*x(j97,t4) + 2*x(j97,t5) + 2*x(j97,t6) + x(j98,t2) + x(j98,t3) + 8*x(j99,t2) + 8*x(j99,t3) + 8*x(j99,t4) + 8*x(j99,t5) + 8*x(j99,t6) + 8*x(j99,t7) + 8*x(j99,t8) =L= 9 ; (LHS = 0)
+     
+REMAINING 31 ENTRIES SKIPPED
+
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE RCPSP Using MIP From line 163
+
+
+---- x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+x(Q,t0)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       JederVorgangEinmal(Q)
+
+x(Q,t1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       JederVorgangEinmal(Q)
+        1       Projektstruktur(Q,j91)
+        1       Projektstruktur(Q,j92)
+        1       Projektstruktur(Q,j93)
+        1       Projektstruktur(Q,j94)
+        1       Projektstruktur(Q,j95)
+        1       Projektstruktur(Q,j96)
+        1       Projektstruktur(Q,j97)
+        1       Projektstruktur(Q,j98)
+        1       Projektstruktur(Q,j99)
+
+x(j91,t0)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       Kapazitaetsrestriktion(r12,t0)
+
+REMAINING 339 ENTRIES SKIPPED
+
+---- z  Zielfunktionswert
+
+z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       Zielfunktion
+
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE RCPSP Using MIP From line 163
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           4     SINGLE EQUATIONS           74
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES          343
+NON ZERO ELEMENTS         1,632     DISCRETE VARIABLES        342
+
+
+GENERATION TIME      =        0.047 SECONDS      4 MB  24.1.3 r41464 WEX-WEI
+
+
+EXECUTION TIME       =        0.047 SECONDS      4 MB  24.1.3 r41464 WEX-WEI
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                    03/25/14 17:30:21 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   RCPSP               OBJECTIVE  z
+     TYPE    MIP                 DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  163
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      1 Optimal                   
+**** OBJECTIVE VALUE               26.0000
+
+ RESOURCE USAGE, LIMIT          0.015      1000.000
+ ITERATION COUNT, LIMIT         0    2000000000
+
+IBM ILOG CPLEX   24.1.3 r41464 Released Jul 26, 2013 WEI x86_64/MS Windows    
+--- GAMS/Cplex licensed for continuous and discrete problems.
+Cplex 12.5.1.0
+
+MIP status(101): integer optimal solution
+Cplex Time: 0.01sec (det. 1.20 ticks)
+Fixing integer variables, and solving final LP...
+Fixed MIP status(1): optimal
+Cplex Time: 0.00sec (det. 0.18 ticks)
+Proven optimal solution.
+
+MIP Solution:           26.000000    (0 iterations, 0 nodes)
+Final Solve:            26.000000    (0 iterations)
+
+Best possible:          26.000000
+Absolute gap:            0.000000
+Relative gap:            0.000000
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU Zielfunkt~          .              .              .             1.0000      
+
+---- EQU JederVorgangEinmal  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+Q           1.0000         1.0000         1.0000          .          
+j91         1.0000         1.0000         1.0000          .          
+j92         1.0000         1.0000         1.0000          .          
+j93         1.0000         1.0000         1.0000          .          
+j94         1.0000         1.0000         1.0000          .          
+j95         1.0000         1.0000         1.0000          .          
+j96         1.0000         1.0000         1.0000          .          
+j97         1.0000         1.0000         1.0000          .          
+j98         1.0000         1.0000         1.0000          .          
+j99         1.0000         1.0000         1.0000          .          
+S           1.0000         1.0000         1.0000          .          
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+---- EQU Projektstruktur  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+Q  .j91        -INF             .              .              .          
+Q  .j92        -INF           -2.0000          .              .          
+Q  .j93        -INF           -5.0000          .              .          
+Q  .j94        -INF           -6.0000          .              .          
+Q  .j95        -INF          -13.0000          .              .          
+Q  .j96        -INF          -13.0000          .              .          
+Q  .j97        -INF          -14.0000          .              .          
+Q  .j98        -INF          -23.0000          .              .          
+Q  .j99        -INF          -19.0000          .              .          
+j91.j92        -INF             .              .              .          
+j91.j93        -INF           -3.0000          .              .          
+j91.S          -INF          -24.0000          .              .          
+j92.j94        -INF             .              .              .          
+j92.S          -INF          -20.0000          .              .          
+j93.j97        -INF           -6.0000          .              .          
+j93.S          -INF          -18.0000          .              .          
+j94.j95        -INF             .              .              .          
+j94.j96        -INF             .              .              .          
+j94.S          -INF          -13.0000          .              .          
+j95.j98        -INF           -8.0000          .              .          
+j95.j99        -INF           -4.0000          .              .          
+j95.S          -INF          -11.0000          .              .          
+j96.j97        -INF             .              .              .          
+j96.S          -INF          -12.0000          .              .          
+j97.j99        -INF             .              .              .          
+j97.S          -INF           -7.0000          .              .          
+j98.S          -INF           -1.0000          .              .          
+j99.S          -INF             .              .              .          
+
+---- EQU Kapazitaetsrestriktion  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+r12.t0         -INF             .             9.0000          .          
+r12.t1         -INF            1.0000         9.0000          .          
+r12.t2         -INF            1.0000         9.0000          .          
+r12.t3         -INF            2.0000         9.0000          .          
+r12.t4         -INF            2.0000         9.0000          .          
+r12.t5         -INF            2.0000         9.0000          .          
+r12.t6         -INF            8.0000         9.0000          .          
+r12.t7         -INF            7.0000         9.0000          .          
+r12.t8         -INF            7.0000         9.0000          .          
+r12.t9         -INF            1.0000         9.0000          .          
+r12.t10        -INF            1.0000         9.0000          .          
+r12.t11        -INF            1.0000         9.0000          .          
+r12.t12        -INF            1.0000         9.0000          .          
+r12.t13        -INF            1.0000         9.0000          .          
+r12.t14        -INF            3.0000         9.0000          .          
+r12.t15        -INF            3.0000         9.0000          .          
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     EQU Kapazitaetsrestriktion  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+r12.t16        -INF            2.0000         9.0000          .          
+r12.t17        -INF            2.0000         9.0000          .          
+r12.t18        -INF            2.0000         9.0000          .          
+r12.t19        -INF            2.0000         9.0000          .          
+r12.t20        -INF            8.0000         9.0000          .          
+r12.t21        -INF            8.0000         9.0000          .          
+r12.t22        -INF            8.0000         9.0000          .          
+r12.t23        -INF            8.0000         9.0000          .          
+r12.t24        -INF            9.0000         9.0000          .          
+r12.t25        -INF            9.0000         9.0000          .          
+r12.t26        -INF            8.0000         9.0000          .          
+r12.t27        -INF             .             9.0000          .          
+r12.t28        -INF             .             9.0000          .          
+r12.t29        -INF             .             9.0000          .          
+r12.t30        -INF             .             9.0000          .          
+r12.t31        -INF             .             9.0000          .          
+r12.t32        -INF             .             9.0000          .          
+r12.t33        -INF             .             9.0000          .          
+
+---- VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+Q  .t0           .             1.0000         1.0000         EPS         
+Q  .t1           .              .             1.0000         EPS         
+j91.t0           .              .             1.0000         EPS         
+j91.t1           .              .             1.0000         EPS         
+j91.t2           .             1.0000         1.0000         EPS         
+j91.t3           .              .             1.0000         EPS         
+j91.t4           .              .             1.0000         EPS         
+j91.t5           .              .             1.0000         EPS         
+j91.t6           .              .             1.0000         EPS         
+j91.t7           .              .             1.0000         EPS         
+j91.t8           .              .             1.0000         EPS         
+j91.t9           .              .             1.0000         EPS         
+j91.t10          .              .             1.0000         EPS         
+j91.t11          .              .             1.0000         EPS         
+j91.t12          .              .             1.0000         EPS         
+j91.t13          .              .             1.0000         EPS         
+j91.t14          .              .             1.0000         EPS         
+j91.t15          .              .             1.0000         EPS         
+j91.t16          .              .             1.0000         EPS         
+j91.t17          .              .             1.0000         EPS         
+j91.t18          .              .             1.0000         EPS         
+j91.t19          .              .             1.0000         EPS         
+j91.t20          .              .             1.0000         EPS         
+j91.t21          .              .             1.0000         EPS         
+j91.t22          .              .             1.0000         EPS         
+j91.t23          .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j91.t24          .              .             1.0000         EPS         
+j91.t25          .              .             1.0000         EPS         
+j91.t26          .              .             1.0000         EPS         
+j91.t27          .              .             1.0000         EPS         
+j91.t28          .              .             1.0000         EPS         
+j91.t29          .              .             1.0000         EPS         
+j91.t30          .              .             1.0000         EPS         
+j91.t31          .              .             1.0000         EPS         
+j91.t32          .              .             1.0000         EPS         
+j91.t33          .              .             1.0000         EPS         
+j92.t0           .              .             1.0000         EPS         
+j92.t1           .              .             1.0000         EPS         
+j92.t2           .              .             1.0000         EPS         
+j92.t3           .              .             1.0000         EPS         
+j92.t4           .              .             1.0000         EPS         
+j92.t5           .              .             1.0000         EPS         
+j92.t6           .             1.0000         1.0000         EPS         
+j92.t7           .              .             1.0000         EPS         
+j92.t8           .              .             1.0000         EPS         
+j92.t9           .              .             1.0000         EPS         
+j92.t10          .              .             1.0000         EPS         
+j92.t11          .              .             1.0000         EPS         
+j92.t12          .              .             1.0000         EPS         
+j92.t13          .              .             1.0000         EPS         
+j92.t14          .              .             1.0000         EPS         
+j92.t15          .              .             1.0000         EPS         
+j92.t16          .              .             1.0000         EPS         
+j92.t17          .              .             1.0000         EPS         
+j92.t18          .              .             1.0000         EPS         
+j92.t19          .              .             1.0000         EPS         
+j92.t20          .              .             1.0000         EPS         
+j92.t21          .              .             1.0000         EPS         
+j92.t22          .              .             1.0000         EPS         
+j92.t23          .              .             1.0000         EPS         
+j92.t24          .              .             1.0000         EPS         
+j92.t25          .              .             1.0000         EPS         
+j92.t26          .              .             1.0000         EPS         
+j92.t27          .              .             1.0000         EPS         
+j92.t28          .              .             1.0000         EPS         
+j92.t29          .              .             1.0000         EPS         
+j92.t30          .              .             1.0000         EPS         
+j92.t31          .              .             1.0000         EPS         
+j92.t32          .              .             1.0000         EPS         
+j92.t33          .              .             1.0000         EPS         
+j93.t0           .              .             1.0000         EPS         
+j93.t1           .              .             1.0000         EPS         
+j93.t2           .              .             1.0000         EPS         
+j93.t3           .              .             1.0000         EPS         
+j93.t4           .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j93.t5           .              .             1.0000         EPS         
+j93.t6           .              .             1.0000         EPS         
+j93.t7           .              .             1.0000         EPS         
+j93.t8           .             1.0000         1.0000         EPS         
+j93.t9           .              .             1.0000         EPS         
+j93.t10          .              .             1.0000         EPS         
+j93.t11          .              .             1.0000         EPS         
+j93.t12          .              .             1.0000         EPS         
+j93.t13          .              .             1.0000         EPS         
+j93.t14          .              .             1.0000         EPS         
+j93.t15          .              .             1.0000         EPS         
+j93.t16          .              .             1.0000         EPS         
+j93.t17          .              .             1.0000         EPS         
+j93.t18          .              .             1.0000         EPS         
+j93.t19          .              .             1.0000         EPS         
+j93.t20          .              .             1.0000         EPS         
+j93.t21          .              .             1.0000         EPS         
+j93.t22          .              .             1.0000         EPS         
+j93.t23          .              .             1.0000         EPS         
+j93.t24          .              .             1.0000         EPS         
+j93.t25          .              .             1.0000         EPS         
+j93.t26          .              .             1.0000         EPS         
+j93.t27          .              .             1.0000         EPS         
+j93.t28          .              .             1.0000         EPS         
+j93.t29          .              .             1.0000         EPS         
+j93.t30          .              .             1.0000         EPS         
+j93.t31          .              .             1.0000         EPS         
+j93.t32          .              .             1.0000         EPS         
+j93.t33          .              .             1.0000         EPS         
+j94.t0           .              .             1.0000         EPS         
+j94.t1           .              .             1.0000         EPS         
+j94.t2           .              .             1.0000         EPS         
+j94.t3           .              .             1.0000         EPS         
+j94.t4           .              .             1.0000         EPS         
+j94.t5           .              .             1.0000         EPS         
+j94.t6           .              .             1.0000         EPS         
+j94.t7           .              .             1.0000         EPS         
+j94.t8           .              .             1.0000         EPS         
+j94.t9           .              .             1.0000         EPS         
+j94.t10          .              .             1.0000         EPS         
+j94.t11          .              .             1.0000         EPS         
+j94.t12          .              .             1.0000         EPS         
+j94.t13          .             1.0000         1.0000         EPS         
+j94.t14          .              .             1.0000         EPS         
+j94.t15          .              .             1.0000         EPS         
+j94.t16          .              .             1.0000         EPS         
+j94.t17          .              .             1.0000         EPS         
+j94.t18          .              .             1.0000         EPS         
+j94.t19          .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j94.t20          .              .             1.0000         EPS         
+j94.t21          .              .             1.0000         EPS         
+j94.t22          .              .             1.0000         EPS         
+j94.t23          .              .             1.0000         EPS         
+j94.t24          .              .             1.0000         EPS         
+j94.t25          .              .             1.0000         EPS         
+j94.t26          .              .             1.0000         EPS         
+j94.t27          .              .             1.0000         EPS         
+j94.t28          .              .             1.0000         EPS         
+j94.t29          .              .             1.0000         EPS         
+j94.t30          .              .             1.0000         EPS         
+j94.t31          .              .             1.0000         EPS         
+j94.t32          .              .             1.0000         EPS         
+j94.t33          .              .             1.0000         EPS         
+j95.t0           .              .             1.0000         EPS         
+j95.t1           .              .             1.0000         EPS         
+j95.t2           .              .             1.0000         EPS         
+j95.t3           .              .             1.0000         EPS         
+j95.t4           .              .             1.0000         EPS         
+j95.t5           .              .             1.0000         EPS         
+j95.t6           .              .             1.0000         EPS         
+j95.t7           .              .             1.0000         EPS         
+j95.t8           .              .             1.0000         EPS         
+j95.t9           .              .             1.0000         EPS         
+j95.t10          .              .             1.0000         EPS         
+j95.t11          .              .             1.0000         EPS         
+j95.t12          .              .             1.0000         EPS         
+j95.t13          .              .             1.0000         EPS         
+j95.t14          .              .             1.0000         EPS         
+j95.t15          .             1.0000         1.0000         EPS         
+j95.t16          .              .             1.0000         EPS         
+j95.t17          .              .             1.0000         EPS         
+j95.t18          .              .             1.0000         EPS         
+j95.t19          .              .             1.0000         EPS         
+j95.t20          .              .             1.0000         EPS         
+j95.t21          .              .             1.0000         EPS         
+j95.t22          .              .             1.0000         EPS         
+j95.t23          .              .             1.0000         EPS         
+j95.t24          .              .             1.0000         EPS         
+j95.t25          .              .             1.0000         EPS         
+j95.t26          .              .             1.0000         EPS         
+j95.t27          .              .             1.0000         EPS         
+j95.t28          .              .             1.0000         EPS         
+j95.t29          .              .             1.0000         EPS         
+j95.t30          .              .             1.0000         EPS         
+j95.t31          .              .             1.0000         EPS         
+j95.t32          .              .             1.0000         EPS         
+j95.t33          .              .             1.0000         EPS         
+j96.t0           .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j96.t1           .              .             1.0000         EPS         
+j96.t2           .              .             1.0000         EPS         
+j96.t3           .              .             1.0000         EPS         
+j96.t4           .              .             1.0000         EPS         
+j96.t5           .              .             1.0000         EPS         
+j96.t6           .              .             1.0000         EPS         
+j96.t7           .              .             1.0000         EPS         
+j96.t8           .              .             1.0000         EPS         
+j96.t9           .              .             1.0000         EPS         
+j96.t10          .              .             1.0000         EPS         
+j96.t11          .              .             1.0000         EPS         
+j96.t12          .              .             1.0000         EPS         
+j96.t13          .              .             1.0000         EPS         
+j96.t14          .             1.0000         1.0000         EPS         
+j96.t15          .              .             1.0000         EPS         
+j96.t16          .              .             1.0000         EPS         
+j96.t17          .              .             1.0000         EPS         
+j96.t18          .              .             1.0000         EPS         
+j96.t19          .              .             1.0000         EPS         
+j96.t20          .              .             1.0000         EPS         
+j96.t21          .              .             1.0000         EPS         
+j96.t22          .              .             1.0000         EPS         
+j96.t23          .              .             1.0000         EPS         
+j96.t24          .              .             1.0000         EPS         
+j96.t25          .              .             1.0000         EPS         
+j96.t26          .              .             1.0000         EPS         
+j96.t27          .              .             1.0000         EPS         
+j96.t28          .              .             1.0000         EPS         
+j96.t29          .              .             1.0000         EPS         
+j96.t30          .              .             1.0000         EPS         
+j96.t31          .              .             1.0000         EPS         
+j96.t32          .              .             1.0000         EPS         
+j96.t33          .              .             1.0000         EPS         
+j97.t0           .              .             1.0000         EPS         
+j97.t1           .              .             1.0000         EPS         
+j97.t2           .              .             1.0000         EPS         
+j97.t3           .              .             1.0000         EPS         
+j97.t4           .              .             1.0000         EPS         
+j97.t5           .              .             1.0000         EPS         
+j97.t6           .              .             1.0000         EPS         
+j97.t7           .              .             1.0000         EPS         
+j97.t8           .              .             1.0000         EPS         
+j97.t9           .              .             1.0000         EPS         
+j97.t10          .              .             1.0000         EPS         
+j97.t11          .              .             1.0000         EPS         
+j97.t12          .              .             1.0000         EPS         
+j97.t13          .              .             1.0000         EPS         
+j97.t14          .              .             1.0000         EPS         
+j97.t15          .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j97.t16          .              .             1.0000         EPS         
+j97.t17          .              .             1.0000         EPS         
+j97.t18          .              .             1.0000         EPS         
+j97.t19          .             1.0000         1.0000         EPS         
+j97.t20          .              .             1.0000         EPS         
+j97.t21          .              .             1.0000         EPS         
+j97.t22          .              .             1.0000         EPS         
+j97.t23          .              .             1.0000         EPS         
+j97.t24          .              .             1.0000         EPS         
+j97.t25          .              .             1.0000         EPS         
+j97.t26          .              .             1.0000         EPS         
+j97.t27          .              .             1.0000         EPS         
+j97.t28          .              .             1.0000         EPS         
+j97.t29          .              .             1.0000         EPS         
+j97.t30          .              .             1.0000         EPS         
+j97.t31          .              .             1.0000         EPS         
+j97.t32          .              .             1.0000         EPS         
+j97.t33          .              .             1.0000         EPS         
+j98.t0           .              .             1.0000         EPS         
+j98.t1           .              .             1.0000         EPS         
+j98.t2           .              .             1.0000         EPS         
+j98.t3           .              .             1.0000         EPS         
+j98.t4           .              .             1.0000         EPS         
+j98.t5           .              .             1.0000         EPS         
+j98.t6           .              .             1.0000         EPS         
+j98.t7           .              .             1.0000         EPS         
+j98.t8           .              .             1.0000         EPS         
+j98.t9           .              .             1.0000         EPS         
+j98.t10          .              .             1.0000         EPS         
+j98.t11          .              .             1.0000         EPS         
+j98.t12          .              .             1.0000         EPS         
+j98.t13          .              .             1.0000         EPS         
+j98.t14          .              .             1.0000         EPS         
+j98.t15          .              .             1.0000         EPS         
+j98.t16          .              .             1.0000         EPS         
+j98.t17          .              .             1.0000         EPS         
+j98.t18          .              .             1.0000         EPS         
+j98.t19          .              .             1.0000         EPS         
+j98.t20          .              .             1.0000         EPS         
+j98.t21          .              .             1.0000         EPS         
+j98.t22          .              .             1.0000         EPS         
+j98.t23          .              .             1.0000         EPS         
+j98.t24          .              .             1.0000         EPS         
+j98.t25          .             1.0000         1.0000         EPS         
+j98.t26          .              .             1.0000         EPS         
+j98.t27          .              .             1.0000         EPS         
+j98.t28          .              .             1.0000         EPS         
+j98.t29          .              .             1.0000         EPS         
+j98.t30          .              .             1.0000         EPS         
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+j98.t31          .              .             1.0000         EPS         
+j98.t32          .              .             1.0000         EPS         
+j98.t33          .              .             1.0000         EPS         
+j99.t0           .              .             1.0000         EPS         
+j99.t1           .              .             1.0000         EPS         
+j99.t2           .              .             1.0000         EPS         
+j99.t3           .              .             1.0000         EPS         
+j99.t4           .              .             1.0000         EPS         
+j99.t5           .              .             1.0000         EPS         
+j99.t6           .              .             1.0000         EPS         
+j99.t7           .              .             1.0000         EPS         
+j99.t8           .              .             1.0000         EPS         
+j99.t9           .              .             1.0000         EPS         
+j99.t10          .              .             1.0000         EPS         
+j99.t11          .              .             1.0000         EPS         
+j99.t12          .              .             1.0000         EPS         
+j99.t13          .              .             1.0000         EPS         
+j99.t14          .              .             1.0000         EPS         
+j99.t15          .              .             1.0000         EPS         
+j99.t16          .              .             1.0000         EPS         
+j99.t17          .              .             1.0000         EPS         
+j99.t18          .              .             1.0000         EPS         
+j99.t19          .              .             1.0000         EPS         
+j99.t20          .              .             1.0000         EPS         
+j99.t21          .              .             1.0000         EPS         
+j99.t22          .              .             1.0000         EPS         
+j99.t23          .              .             1.0000         EPS         
+j99.t24          .              .             1.0000         EPS         
+j99.t25          .              .             1.0000         EPS         
+j99.t26          .             1.0000         1.0000         EPS         
+j99.t27          .              .             1.0000         EPS         
+j99.t28          .              .             1.0000         EPS         
+j99.t29          .              .             1.0000         EPS         
+j99.t30          .              .             1.0000         EPS         
+j99.t31          .              .             1.0000         EPS         
+j99.t32          .              .             1.0000         EPS         
+j99.t33          .              .             1.0000         EPS         
+S  .t0           .              .             1.0000         EPS         
+S  .t1           .              .             1.0000         1.0000      
+S  .t2           .              .             1.0000         2.0000      
+S  .t3           .              .             1.0000         3.0000      
+S  .t4           .              .             1.0000         4.0000      
+S  .t5           .              .             1.0000         5.0000      
+S  .t6           .              .             1.0000         6.0000      
+S  .t7           .              .             1.0000         7.0000      
+S  .t8           .              .             1.0000         8.0000      
+S  .t9           .              .             1.0000         9.0000      
+S  .t10          .              .             1.0000        10.0000      
+S  .t11          .              .             1.0000        11.0000      
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE RCPSP Using MIP From line 163
+
+
+     VAR x  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+S  .t12          .              .             1.0000        12.0000      
+S  .t13          .              .             1.0000        13.0000      
+S  .t14          .              .             1.0000        14.0000      
+S  .t15          .              .             1.0000        15.0000      
+S  .t16          .              .             1.0000        16.0000      
+S  .t17          .              .             1.0000        17.0000      
+S  .t18          .              .             1.0000        18.0000      
+S  .t19          .              .             1.0000        19.0000      
+S  .t20          .              .             1.0000        20.0000      
+S  .t21          .              .             1.0000        21.0000      
+S  .t22          .              .             1.0000        22.0000      
+S  .t23          .              .             1.0000        23.0000      
+S  .t24          .              .             1.0000        24.0000      
+S  .t25          .              .             1.0000        25.0000      
+S  .t26          .             1.0000         1.0000        26.0000      
+S  .t27          .              .             1.0000        27.0000      
+S  .t28          .              .             1.0000        28.0000      
+S  .t29          .              .             1.0000        29.0000      
+S  .t30          .              .             1.0000        30.0000      
+S  .t31          .              .             1.0000        31.0000      
+S  .t32          .              .             1.0000        32.0000      
+S  .t33          .              .             1.0000        33.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR z                 -INF           26.0000        +INF             .          
+
+  z  Zielfunktionswert
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WEX-WEI x86_64/MS Windows                                                                                                                                                                   03/25/14 17:30:21 Page 19
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    165 VARIABLE x.L  nimmt den Wert 1 an wenn der Arbeitsgang j in Periode t beendet wird und 0 sonst
+
+             t0          t2          t6          t8         t13         t14         t15         t19         t25         t26
+
+Q         1.000
+j91                   1.000
+j92                               1.000
+j93                                           1.000
+j94                                                       1.000
+j95                                                                               1.000
+j96                                                                   1.000
+j97                                                                                           1.000
+j98                                                                                                       1.000
+j99                                                                                                                   1.000
+S                                                                                                                     1.000
+
+
+**** REPORT FILE SUMMARY
+
+Outputfile C:\Sites\RCPSP23\Outputfile.txt
+
+
+EXECUTION TIME       =        0.000 SECONDS      3 MB  24.1.3 r41464 WEX-WEI
+
+
+USER: Kurslizenz                                     S130222/0001AN-GEN
+      Leibniz University Hannover, Lehrstuhl fuer ProduktionswirtDC6657
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      C:\Sites\RCPSP23\RCPSP_Modell.gms
+Output     C:\Sites\RCPSP23\RCPSP_Modell.lst
