@@ -9,22 +9,12 @@ class RelationsController < ApplicationController
     @relations = Relation.all
   end
 
-  def show
-    @relation = Relation.find(params[:id])
-  end
-
-  def edit
-    @relation = Relation.find(params[:id])
-  end
-
   def update
     @relation = Relation.find(params[:id])
 
     if @relation.update_attributes(params[:relation])
       flash[:success] = "Update successful!"
       redirect_to relations_path
-    else
-      render 'edit'
     end
   end
 
@@ -46,13 +36,12 @@ class RelationsController < ApplicationController
   end
 
 
-
   private
 
   def signed_in_user
     unless signed_in?
       store_location
-      redirect_to signin_path, notice: "Bitte melden Sie sich an."
+      redirect_to signin_path, notice: "Please Sign in."
     end
   end
 end

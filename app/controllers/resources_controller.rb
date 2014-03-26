@@ -21,8 +21,6 @@ class ResourcesController < ApplicationController
     if @resource.update_attributes(params[:resource])
       flash[:success] = "Update successful!"
       redirect_to (resources_path)
-    else
-      render 'edit'
     end
   end
 
@@ -52,12 +50,14 @@ class ResourcesController < ApplicationController
     redirect_to resources_path
   end
 
+
+
   private
 
   def signed_in_user
     unless signed_in?
       store_location
-      redirect_to signin_path, notice: "Bitte melden Sie sich an."
+      redirect_to signin_path, notice: "Please sign in."
     end
   end
 

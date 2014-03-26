@@ -1,44 +1,42 @@
 require 'spec_helper'
 
 describe "Resources pages" do
-   subject { page }
+  subject { page }
 
   let(:user) { FactoryGirl.create(:user) }
-  before { sign_in user }
-
-
-   describe "resource creation" do
-     before { visit new_resource_path }
-
-     describe "with valid information" do
-
-       #before { FactoryGirl.create(:resource) }
-
-
-       before do
-            fill_in "resource_name", with: "Res1"
-            fill_in "resource_capacity", with: 5
-       end
-
-     it "should create a resource" do
-       expect { click_button "Save resource" }.to change(Resource, :count).by(1)
-       #before { visit new_resource_path}
-     end
-   end
-
-
-  #  describe "resources destruction" do
-  #  before { FactoryGirl.create(:resource, capacity: 6) }
-
-  #  describe "as correct user" do
-  #  before { visit resources_path }
-
-  #   it "should delete a resource" do
-  #      expect { click_link "delete" }.to change(Resource, :count).by(-1)
-  #    end
-  #  end
-  # end
-   end
+  before do
+    sign_in user
   end
+
+  describe "resource creation" do
+    before { visit new_resource_path }
+
+    describe "with valid information" do
+
+      before do
+        fill_in "resource_name", with: "Res1"
+        fill_in "resource_capacity", with: 5
+      end
+
+      it "should create a resource" do
+        expect { click_button "Save resource" }.to change(Resource, :count).by(1)
+
+      end
+    end
+  end
+
+  describe "Index" do
+    before do
+      visit resources_path
+    end
+
+    it { should have_selector('h1',    text: 'Resources') }
+    it { should have_link('Create a new Resource', href: new_resource_path) }
+    it { should have_link('Continue with Jobs', href: jobs_path)}
+    it { should have_link('Go to Main Menu', href: user_path(user))}
+  end
+end
+
+
 
 

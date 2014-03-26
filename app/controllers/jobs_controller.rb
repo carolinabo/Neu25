@@ -33,8 +33,7 @@ class JobsController < ApplicationController
     if @job.update_attributes(params[:job])
       flash[:success] = "Update successful!"
       redirect_to jobs_path
-    else
-      render 'edit'
+
     end
   end
 
@@ -217,7 +216,7 @@ class JobsController < ApplicationController
   def signed_in_user
     unless signed_in?
       store_location
-      redirect_to signin_path, notice: "Bitte melden Sie sich an."
+      redirect_to signin_path, notice: "Please sign in."
     end
   end
 

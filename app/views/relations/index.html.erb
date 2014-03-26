@@ -8,7 +8,7 @@
 
   <% @relations.each do |relation| %>
       <tr>
-        <td><%= best_in_place relation.job, :name, :type => :input %></td>
+        <td><%= relation.job.name %></td>
         <td><%= relation.successor.name %></td>
          <td><%= link_to 'Destroy', relation, method: :delete, data: {confirm: 'Are you sure?'} %></td>
       </tr>

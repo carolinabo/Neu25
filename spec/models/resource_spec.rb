@@ -34,8 +34,8 @@ describe Resource do
     it { should_not be_valid }
   end
 
-#  describe "when capacity is smaller than 0" do
-#     before { @resource.capacity = "-2" }
-#     it { should be >=0 }
-
+  describe "when capacity is negative" do
+    before { @resource.capacity = -2 }
+    it { should_not be_valid }
+  end
 end
